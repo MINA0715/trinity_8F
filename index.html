@@ -309,11 +309,10 @@ function addMsg(html,who) {
 function respond(q) {
   const r=searchFood(q);
   if(!r.length){ addMsg('"<b>'+q+'</b>" 결과가 없어요.<br><span style="font-size:11px;color:#aaa">식당명·카테고리·메뉴로 검색해보세요.</span>','bot'); return; }
-  const shown=r.slice(0,6);
+  
   let h='';
   if(r.length>1) h+=`<div style="font-size:11px;color:#aaa;margin-bottom:5px;">${r.length}개 · 카드 클릭 시 네이버 지도</div>`;
-  h+='<div class="multi-result">'+shown.map(foodCard).join('')+'</div>';
-  if(r.length>6) h+=`<div style="font-size:11px;color:#bbb;margin-top:4px;">외 ${r.length-6}개</div>`;
+  h+='<div class="multi-result">'+r.map(foodCard).join('')+'</div>';
   addMsg(h,'bot');
 }
 (function(){
