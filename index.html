@@ -285,7 +285,11 @@ const FOOD = [
   {n:"CU(마곡르웨스트점)",cat:"편의점",loc:"마곡동",price:5000,menu:"-",addr:"서울특별시 강서구 마곡중앙로 111 104동 1층 165호"}
 ];
 const CATS = ["한식","일식","중식","아시안식","양식","샐러드/포케","햄버거","카페/디저트","편의점"];
-function naverUrl(n,a){ return 'https://map.naver.com/v5/search/'+encodeURIComponent(n+' '+a); }
+function naverUrl(n,a){
+  const m=a.match(/([\w]+구\s+[\w\-]+(?:동|로|길))/);
+  const shortAddr=m?m[1]:a.split(' ').slice(0,4).join(' ');
+  return 'https://map.naver.com/v5/search/'+encodeURIComponent(n+' '+shortAddr);
+}
 function searchFood(q) {
   const kw=q.toLowerCase();
   return FOOD.filter(d=>d.n.toLowerCase().includes(kw)||d.cat.toLowerCase().includes(kw)||d.loc.toLowerCase().includes(kw)||d.menu.toLowerCase().includes(kw));
