@@ -1,0 +1,342 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>8F 안내 챗봇</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+*{box-sizing:border-box;margin:0;padding:0;}
+body{font-family:'Noto Sans KR',sans-serif;background:#f0f0ec;display:flex;justify-content:center;align-items:center;min-height:100vh;padding:16px;}
+.app{width:100%;max-width:500px;height:720px;display:flex;flex-direction:column;border-radius:20px;overflow:hidden;box-shadow:0 8px 40px rgba(0,0,0,0.12);background:#fff;}
+.header{padding:18px 22px 14px;background:#1a1a1a;color:#fff;flex-shrink:0;}
+.header-top{display:flex;align-items:center;gap:10px;margin-bottom:10px;}
+.logo{width:32px;height:32px;background:#1D9E75;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:16px;}
+.header h1{font-size:15px;font-weight:600;color:#fff;}
+.header p{font-size:11px;color:#888;margin-top:1px;}
+.tabs{display:flex;gap:6px;}
+.tab{padding:5px 14px;border-radius:20px;font-size:12px;font-weight:500;cursor:pointer;border:1px solid #333;color:#aaa;transition:all 0.15s;}
+.tab.active{background:#1D9E75;border-color:#1D9E75;color:#fff;}
+.msgs{flex:1;overflow-y:auto;padding:16px;display:flex;flex-direction:column;gap:10px;background:#f8f8f4;}
+.msg{max-width:88%;}
+.msg.bot{align-self:flex-start;}
+.msg.user{align-self:flex-end;}
+.bubble{padding:10px 14px;border-radius:14px;font-size:13.5px;line-height:1.6;}
+.bot .bubble{background:#fff;color:#1a1a1a;border-bottom-left-radius:4px;border:1px solid #eee;}
+.user .bubble{background:#1D9E75;color:#fff;border-bottom-right-radius:4px;}
+.rest-name{font-weight:600;font-size:14px;margin-bottom:6px;}
+.price-badge{display:inline-block;background:#E1F5EE;color:#085041;font-size:12px;font-weight:600;padding:3px 10px;border-radius:20px;margin-right:5px;}
+.cat-badge{display:inline-block;background:#f5f5f0;color:#666;font-size:11px;padding:2px 8px;border-radius:20px;border:1px solid #e8e8e0;}
+.menu-info{font-size:12px;color:#666;margin-top:5px;}
+.addr{font-size:11px;color:#999;margin-top:3px;}
+.multi-result{display:flex;flex-direction:column;gap:7px;margin-top:2px;}
+.result-card{background:#fafaf6;border:1px solid #ebebE5;border-radius:10px;padding:10px 12px;}
+.room-card{background:#fafaf6;border:1px solid #ebebE5;border-radius:10px;padding:10px 14px;display:flex;align-items:center;gap:12px;}
+.room-num{font-size:20px;font-weight:700;color:#1D9E75;min-width:32px;}
+.room-zone{font-size:13px;font-weight:500;color:#1a1a1a;}
+.room-loc{font-size:12px;color:#888;margin-top:2px;}
+.chips{display:flex;flex-wrap:wrap;gap:5px;margin-top:8px;}
+.chip{background:#fff;border:1px solid #ddd;color:#555;font-size:12px;padding:5px 12px;border-radius:20px;cursor:pointer;transition:all 0.15s;}
+.chip:hover{background:#1D9E75;color:#fff;border-color:#1D9E75;}
+.chip.room-chip{border-color:#c8e6c9;color:#2e7d32;}
+.chip.room-chip:hover{background:#2e7d32;border-color:#2e7d32;color:#fff;}
+.input-row{display:flex;gap:8px;padding:12px 14px;border-top:1px solid #eee;background:#fff;flex-shrink:0;}
+.input-row input{flex:1;padding:10px 14px;font-size:13.5px;border:1px solid #e0e0da;border-radius:10px;background:#f8f8f4;color:#1a1a1a;outline:none;font-family:inherit;}
+.input-row input:focus{border-color:#1D9E75;background:#fff;box-shadow:0 0 0 3px rgba(29,158,117,0.1);}
+.send-btn{padding:10px 16px;background:#1D9E75;color:#fff;border:none;border-radius:10px;font-size:15px;cursor:pointer;transition:background 0.15s;flex-shrink:0;}
+.send-btn:hover{background:#0F6E56;}
+.more-info{font-size:11px;color:#bbb;margin-top:5px;}
+</style>
+</head>
+<body>
+<div class="app">
+  <div class="header">
+    <div class="header-top">
+      <div class="logo">🏢</div>
+      <div>
+        <h1>8F 안내 챗봇</h1>
+        <p>식권 식당 · 회의실 위치 검색</p>
+      </div>
+    </div>
+    <div class="tabs">
+      <div class="tab active" onclick="setMode('all')">전체</div>
+      <div class="tab" onclick="setMode('food')">🍱 식권 식당</div>
+      <div class="tab" onclick="setMode('room')">📋 회의실</div>
+    </div>
+  </div>
+  <div class="msgs" id="msgs"></div>
+  <div class="input-row">
+    <input type="text" id="inp" placeholder="식당 이름, 카테고리, 회의실 번호..." />
+    <button class="send-btn" id="sendbtn">➤</button>
+  </div>
+</div>
+
+<script>
+const ROOMS = [
+  {num:"01",zone:"E구역",loc:"엘리베이터 옆, Break Room1 근처"},
+  {num:"02",zone:"E구역",loc:"E구역 남쪽"},
+  {num:"03",zone:"E구역",loc:"E구역 남쪽"},
+  {num:"04",zone:"E구역",loc:"IT솔루션 구역 인접"},
+  {num:"05",zone:"E구역",loc:"E구역 중앙"},
+  {num:"06",zone:"E구역",loc:"E구역 중앙"},
+  {num:"07",zone:"E구역",loc:"E구역 LOUNGE 1 옆"},
+  {num:"08",zone:"E구역",loc:"IT솔루션 구역, LOUNGE 옆"},
+  {num:"09",zone:"E구역",loc:"IT솔루션 구역"},
+  {num:"10",zone:"E구역",loc:"IT솔루션 구역"},
+  {num:"11",zone:"W구역",loc:"IT기획·시스템기획 구역"},
+  {num:"12",zone:"개발 구역",loc:"IT개발 구역 상단, LOUNGE 옆"},
+  {num:"13",zone:"개발 구역",loc:"IT개발 구역 상단"},
+  {num:"14",zone:"N구역",loc:"LOUNGE 2 옆"},
+  {num:"15",zone:"개발 구역",loc:"IT개발 구역, 부스 근처"},
+  {num:"16",zone:"개발 구역",loc:"IT개발 구역, 부스 근처"},
+  {num:"17",zone:"개발 구역",loc:"IT개발 구역"},
+  {num:"18",zone:"N구역",loc:"N구역 엘리베이터 근처"},
+  {num:"19",zone:"N구역",loc:"N구역, LOUNGE 2 인접"},
+];
+
+const FOOD = [
+  {n:"㈜에렉스 카페테리아",cat:"한식",loc:"마곡나루역",price:8000,menu:"8,000",addr:"본동 지하1층"},
+  {n:"오제제",cat:"일식",loc:"마곡코엑스",price:8000,menu:"등심 돈카츠 16,000 / 안심 돈카츠 17,000",addr:"지하2층"},
+  {n:"페이페이",cat:"아시안식",loc:"마곡코엑스",price:8000,menu:"양지 쌀국수 12,000",addr:"지하 2층"},
+  {n:"제이스팟",cat:"아시안식",loc:"마곡동",price:8000,menu:"런치우삼겹훠궈 16,500",addr:"지하2층 208호"},
+  {n:"어부몽",cat:"한식",loc:"마곡코엑스",price:8000,menu:"고등어구이 15,000 / 꼬막비빔밥·제육볶음·짬뽕순두부 13,000",addr:"지하 2층"},
+  {n:"정성순대",cat:"한식",loc:"마곡코엑스",price:8000,menu:"수제순대국 11,000",addr:"지하 2층"},
+  {n:"고부대",cat:"한식",loc:"마곡코엑스",price:8000,menu:"미나리 부대찌개 13,000",addr:"지하2층"},
+  {n:"동원홈푸드 크리스피 프레시",cat:"샐러드/포케",loc:"마곡코엑스",price:8000,menu:"비프스테이크 플레이트 샐러드 16,800",addr:"지하2층"},
+  {n:"동원홈푸드 포르투세븐",cat:"양식",loc:"마곡코엑스",price:8000,menu:"시그니처 씨푸드 스튜 파스타 21,800",addr:"지하2층"},
+  {n:"상해루",cat:"중식",loc:"마곡코엑스",price:8000,menu:"유니 짜장면·짬뽕 10,000",addr:"지하 2층"},
+  {n:"오근내10닭갈비",cat:"한식",loc:"마곡나루역",price:8000,menu:"닭갈비 16,000",addr:"본동 지하2층"},
+  {n:"흑토포케",cat:"샐러드/포케",loc:"마곡동",price:8000,menu:"-",addr:"1층 111호"},
+  {n:"남원식당",cat:"한식",loc:"마곡동",price:8000,menu:"9,000",addr:"214~216호"},
+  {n:"밥플러스",cat:"한식",loc:"마곡동",price:8000,menu:"9,000",addr:"B동 지하2층"},
+  {n:"버거리",cat:"햄버거",loc:"마곡나루역",price:8000,menu:"트리플치즈버거 6,600 / SET 10,300",addr:"A동 114호"},
+  {n:"청가",cat:"중식",loc:"마곡동",price:8000,menu:"해물자장면 7,000 / 삼선짬뽕·백짬뽕 9,000",addr:"두산더랜드타워 B동 2층"},
+  {n:"셀러디",cat:"샐러드/포케",loc:"마곡나루역",price:8000,menu:"클래식 치킨 샌드위치 세트 8,400",addr:"1층"},
+  {n:"KFC",cat:"햄버거",loc:"마곡나루역",price:8000,menu:"-",addr:"1층"},
+  {n:"전주옥가마솥곰탕",cat:"한식",loc:"마곡동",price:8000,menu:"한우전주곰탕·한우소머리곰탕 12,000",addr:"서관 B123호"},
+  {n:"달인 대보손칼국수",cat:"한식",loc:"마곡동",price:8000,menu:"원조칼국수 8,000 / 한우육회비빔밥 10,000",addr:"2층 211호"},
+  {n:"등촌샤브칼국수",cat:"한식",loc:"마곡나루역",price:8000,menu:"버섯매운탕칼국수 11,000",addr:"2층"},
+  {n:"포케올데이",cat:"샐러드/포케",loc:"마곡나루역",price:8000,menu:"닭가슴살 밸런스박스 도시락 11,900",addr:"2층 225호"},
+  {n:"퀴즈노스",cat:"샐러드/포케",loc:"마곡나루역",price:8000,menu:"트레디셔널 R 8,500 / M 12,000 / L 15,500",addr:"154호"},
+  {n:"역전우동",cat:"한식",loc:"마곡나루역",price:8000,menu:"옛날우동 4,500 / 역전돈까스 8,500",addr:"1층 114호"},
+  {n:"차이나는 감자탕",cat:"한식",loc:"마곡나루역",price:8000,menu:"뼈해장국 11,000",addr:"201호"},
+  {n:"우주공간",cat:"한식",loc:"마곡동",price:8000,menu:"육회 비빔밥 12,000",addr:"서관 1층 136호"},
+  {n:"최원재 함흥냉면",cat:"한식",loc:"마곡동",price:8000,menu:"물·비빔 냉면 8,000",addr:"신안아파트 상가동 104호"},
+  {n:"츠키제",cat:"일식",loc:"마곡동",price:8000,menu:"로스카츠 13,000 / 상로스카츠 16,000",addr:"원그로브 B동 지하1층"},
+  {n:"이완미엔",cat:"아시안식",loc:"마곡동",price:8000,menu:"홍샤오 우육면 12,000 / 토마토 우육면 13,000",addr:"원그로브 C동 1층"},
+  {n:"탄탄면공방 더블랙",cat:"아시안식",loc:"마곡동",price:8000,menu:"마제탄탄면 14,000 / 미소백탄면 13,000 / 탄탄면 11,800",addr:"원그로브 B동 지하1층"},
+  {n:"삼청동샤브",cat:"한식",loc:"마곡동",price:8000,menu:"멸치샤브+우삼격 12,900 / 멸치샤브+목심 13,900",addr:"원그로브 A동 1층"},
+  {n:"중앙해장",cat:"중식",loc:"마곡동",price:8000,menu:"한우 양선지 해장국 14,000 / 한우 양지곰탕 16,000",addr:"원그로브 1층"},
+  {n:"만사부",cat:"한식",loc:"마곡동",price:8000,menu:"모든 만두전골 13,000 / 만두전골+샤브세트 15,900",addr:"원그로브"},
+  {n:"가족회관",cat:"한식",loc:"마곡동",price:8000,menu:"전주비빔밥 12,000 / 돌솥비빔밥 13,000",addr:"원그로브 B1층"},
+  {n:"페이홍러우",cat:"한식",loc:"마곡동",price:8000,menu:"유니짜장면 10,000 / 짬뽕·짬뽕밥 13,000",addr:"원그로브 2층"},
+  {n:"딤딤섬",cat:"중식",loc:"마곡동",price:8000,menu:"돼지고기 차슈 덮밥 10,000 / 오리구이 덮밥 14,000",addr:"원그로브 C동 1층"},
+  {n:"더 레어",cat:"카페",loc:"마곡동",price:8000,menu:"마카롱 3,200",addr:"원그로브 C동 2층"},
+  {n:"공탕",cat:"한식",loc:"마곡동",price:8000,menu:"돼지공탕(기본) 13,000 / 갈비공탕 16,000",addr:"원그로브 1층"},
+  {n:"숙성도",cat:"한식",loc:"마곡동",price:8000,menu:"뼈등심 39,000 / 뼈목살 38,000 / 삼겹살 23,000",addr:"원그로브 1층"},
+  {n:"을지깐깐",cat:"아시안식",loc:"마곡동",price:8000,menu:"소고기쌀국수 13,000 / 고기덮밥 14,000",addr:"원그로브 지하1층"},
+  {n:"유키모찌",cat:"카페/디저트",loc:"마곡동",price:8000,menu:"모찌 3,000~5,000 / 아메리카노 2,500",addr:"원그로브 1층"},
+  {n:"하우스오브디라이프스타키친",cat:"양식",loc:"마곡동",price:8000,menu:"치킨스테이크로제파스타 28,000",addr:"원그로브 B1층"},
+  {n:"버거킹",cat:"햄버거",loc:"마곡동",price:8000,menu:"-",addr:"원그로브 지하1층"},
+  {n:"스시마우",cat:"일식",loc:"마곡동",price:8000,menu:"한접시 1,700~9,900",addr:"원그로브 A동 지하1층"},
+  {n:"봉혜자네주방",cat:"한식",loc:"마곡동",price:8000,menu:"통낙지볶음(1인) 15,000 / 쭈꾸미볶음(1인) 14,000",addr:"원그로브 A동 1층"},
+  {n:"랄라루들",cat:"아시안식",loc:"마곡동",price:8000,menu:"황두장면 9,000 / 홍콩식 닭곰탕반 13,000",addr:"원그로브 1층"},
+  {n:"고동경양",cat:"일식",loc:"마곡동",price:8000,menu:"시그니처 함박 13,500 / 고동 1988 12,500 / 문래 돈카츠 12,900",addr:"원그로브 A동 1층"},
+  {n:"잣품은그집호두과자",cat:"카페/디저트",loc:"마곡동",price:8000,menu:"쌀호두과자12개 8,000",addr:"원그로브 1층"},
+  {n:"마츠노하나",cat:"일식",loc:"마곡동",price:8000,menu:"쇼유사케에비텐동 18,800 / 아나고텐동 19,800",addr:"원그로브 지하1층"},
+  {n:"테라로사",cat:"카페/디저트",loc:"마곡동",price:8000,menu:"-",addr:"원그로브 D동 1층"},
+  {n:"모모유부원",cat:"한식",loc:"마곡동",price:8000,menu:"모모네 라면세트 9,900 / 떡볶이세트 10,900",addr:"원그로브 1층"},
+  {n:"예원",cat:"중식",loc:"마곡동",price:8000,menu:"유니짜장 8,000 / 차돌짬뽕 11,500",addr:"보타닉파크타워1"},
+  {n:"얌샘김밥",cat:"한식",loc:"마곡나루역",price:8000,menu:"-",addr:"보타닉파크타워 108호"},
+  {n:"코코이짜방아",cat:"일식",loc:"마곡나루역",price:8000,menu:"-",addr:"보타닉파크타워 2층"},
+  {n:"석봉토스트",cat:"한식",loc:"마곡동",price:8000,menu:"-",addr:"보타닉파크타워Ⅰ"},
+  {n:"송쭈집",cat:"한식",loc:"마곡나루역",price:8000,menu:"쭈꾸미 비빔밥 11,000 / 쭈꾸미+삼겹살 비빔밥 12,000",addr:"마곡센트럴타워 2층"},
+  {n:"한주가",cat:"한식",loc:"마곡동",price:8000,menu:"순살닭볶음탕 24,000 / 꽃게탕 26,000",addr:"2층"},
+  {n:"응급실떡볶이",cat:"한식",loc:"마곡나루역",price:8000,menu:"-",addr:"114호"},
+  {n:"일품한우",cat:"한식",loc:"마곡동",price:8000,menu:"뚝배기불고기 10,000 / 왕갈비탕 16,000 / 한우국밥 10,000",addr:"마곡일성트루엘플래닛"},
+  {n:"153구포국수",cat:"한식",loc:"마곡나루역",price:8000,menu:"잔치국수 8,000 / 비빔국수 8,500 / 지단김밥 5,700",addr:"1층 120호"},
+  {n:"보승회관",cat:"한식",loc:"마곡나루역",price:8000,menu:"항정수육국밥 13,000 / 순대국밥 11,000",addr:"1층 103~104호"},
+  {n:"원스짬뽕",cat:"중식",loc:"마곡동",price:8000,menu:"원스짬뽕 12,000 / 소고기짬뽕 14,000",addr:"2층"},
+  {n:"연희김밥",cat:"한식",loc:"마곡동",price:8000,menu:"연희김밥 4,000",addr:"1층 102호"},
+  {n:"새마을식당",cat:"한식",loc:"마곡나루역",price:8000,menu:"-",addr:"1층 105~106호"},
+  {n:"란콰이펑누들",cat:"아시안식",loc:"마곡나루역",price:8000,menu:"우육탕면 9,500 / 새우탕면 마라맛 11,000",addr:"101호"},
+  {n:"대박이네 한식뷔페",cat:"한식",loc:"마곡동",price:8000,menu:"8,500 / 라면·계란후라이 무료",addr:"지하1층"},
+  {n:"원조감자탕 일미집",cat:"한식",loc:"마곡나루역",price:8000,menu:"감자탕백반 10,000",addr:"104호"},
+  {n:"보경손수제비",cat:"한식",loc:"마곡동",price:8000,menu:"손수제비·칼제비·칼국수·비빔국수 8,500",addr:"두산더랜드파크"},
+  {n:"지피다",cat:"한식",loc:"마곡동",price:8000,menu:"[점심]돼지불백쌈밥+김치찌개 10,000",addr:"B동 1층 106~107호"},
+  {n:"나루동태탕",cat:"한식",loc:"마곡나루역",price:8000,menu:"아구찜(小) 38,000 / 동태전골(中) 35,000",addr:"B동 210호"},
+  {n:"동호정",cat:"한식",loc:"마곡동",price:8000,menu:"가정식백반(점심) 9,000 / 순두부찌개 9,000 / 김치찌개 9,000",addr:"두산더랜드파크 B동"},
+  {n:"본죽&비빔밥",cat:"한식",loc:"마곡나루역",price:8000,menu:"-",addr:"두산더랜드파크 1층"},
+  {n:"진진수라",cat:"한식",loc:"마곡코엑스",price:8000,menu:"(평일점심특선)갈비한상 45,000 / 갈치조림정식 30,000",addr:"지하 2층"},
+  {n:"오봉집",cat:"한식",loc:"마곡나루역",price:8000,menu:"직화낙지볶음 12,000 / 직화오제볶음 11,000",addr:"1층"},
+  {n:"참이맛감자탕",cat:"한식",loc:"마곡나루역",price:8000,menu:"참이맛 감자탕(소) 33,000",addr:"1층 103~104호"},
+  {n:"고부대(마곡코엑스점)",cat:"한식",loc:"마곡코엑스",price:8000,menu:"미나리부대찌개 2인 SET 34,000",addr:"지하2층"},
+  {n:"브레디몽",cat:"카페/디저트",loc:"마곡코엑스",price:8000,menu:"리코타샐러드 10,300 / 클럽 삼각 샌드위치 7,200",addr:"본동 지하2층 232호"},
+  {n:"삼청당",cat:"한식",loc:"마곡코엑스",price:8000,menu:"삼청담김밥 5,500 / 한돈떡갈비김밥 6,900",addr:"지하2층 B235~236호"},
+  {n:"소복집",cat:"한식",loc:"마곡동",price:8000,menu:"우랑강된장보리비빔밥 10,000 / 전통보쌈정식 11,000",addr:"1층 116호"},
+  {n:"침스버거",cat:"햄버거",loc:"마곡동",price:8000,menu:"침스버거 8,200 / 블루침스버거·칠리침스버거 8,800",addr:"본동 지하2층 211호"},
+  {n:"도니랑 김치생삼겹",cat:"한식",loc:"마곡동",price:8000,menu:"삼겹살(180g) 17,000 / 소불고기전골(점심) 11,000",addr:"1층"},
+  {n:"웨이",cat:"중식",loc:"마곡동",price:8000,menu:"wei 짜장면 7,000 / wei 짬뽕 9,000",addr:"2층 218호"},
+  {n:"팀홀튼",cat:"카페/디저트",loc:"마곡나루역",price:4500,menu:"-",addr:"르웨스트시티 A동 1층"},
+  {n:"커피기업",cat:"카페/디저트",loc:"마곡코엑스",price:4500,menu:"-",addr:"지하 2층"},
+  {n:"메가MGC커피",cat:"카페/디저트",loc:"마곡동",price:4500,menu:"-",addr:"714동 1층"},
+  {n:"파란만잔",cat:"카페/디저트",loc:"마곡동",price:4500,menu:"-",addr:"1층 117호"},
+  {n:"매머드익스프레스",cat:"카페/디저트",loc:"마곡동",price:4500,menu:"-",addr:"에이동 105호"},
+  {n:"설빙",cat:"카페/디저트",loc:"마곡나루역",price:4500,menu:"-",addr:"2층"},
+  {n:"투썸플레이스",cat:"카페/디저트",loc:"마곡나루역",price:4500,menu:"-",addr:"마곡보타닉푸르지오시티"},
+  {n:"와플샵",cat:"카페/디저트",loc:"마곡동",price:4500,menu:"와플/크로플+커피 5,500 / 오리지널 크로플 3,500",addr:"원그로브 1층"},
+  {n:"공차",cat:"카페/디저트",loc:"마곡동",price:4500,menu:"-",addr:"원그로브 B동 1층"},
+  {n:"더벤티",cat:"카페/디저트",loc:"마곡나루역",price:4500,menu:"-",addr:"에이동 110호"},
+  {n:"카페디얼",cat:"카페/디저트",loc:"마곡동",price:4500,menu:"-",addr:"상가동 1층 102호"},
+  {n:"파리바게뜨",cat:"카페/디저트",loc:"마곡나루역",price:4500,menu:"-",addr:"1층 114~115호"},
+  {n:"빽다방",cat:"카페/디저트",loc:"마곡나루역",price:4500,menu:"-",addr:"1층 101호"},
+  {n:"주씨",cat:"카페/디저트",loc:"마곡나루역",price:4500,menu:"-",addr:"A동 1층 112호"},
+  {n:"우지커피",cat:"카페/디저트",loc:"마곡동",price:4500,menu:"-",addr:"1층 110호"},
+  {n:"CU(마곡웰튼점)",cat:"편의점",loc:"마곡동",price:5000,menu:"-",addr:"마곡중앙5로 22"},
+  {n:"GS25(마곡보타닉점)",cat:"편의점",loc:"마곡동",price:5000,menu:"-",addr:"마곡동 760번지"},
+  {n:"CU(마곡나루역캐슬파크점)",cat:"편의점",loc:"마곡나루역",price:5000,menu:"-",addr:"마곡나루역캐슬파크"},
+  {n:"GS25(마곡나루역점)",cat:"편의점",loc:"마곡나루역",price:5000,menu:"-",addr:"마곡중앙로 지하"},
+  {n:"세븐일레븐(마곡코엑스점)",cat:"편의점",loc:"마곡코엑스",price:5000,menu:"-",addr:"르웨스트시티 본동 지하2층"},
+  {n:"CU(마곡르웨스트점)",cat:"편의점",loc:"마곡동",price:5000,menu:"-",addr:"104동 1층 165호"},
+];
+
+const FOOD_CATS = ["한식","일식","중식","아시안식","양식","샐러드/포케","햄버거","카페/디저트","편의점"];
+const ROOM_ZONES = ["E구역","W구역","N구역","개발 구역"];
+
+let mode = 'all';
+
+function setMode(m) {
+  mode = m;
+  document.querySelectorAll('.tab').forEach((t,i)=>{
+    t.classList.toggle('active', ['all','food','room'][i]===m);
+  });
+  const inp = document.getElementById('inp');
+  inp.placeholder = m==='room' ? '회의실 번호 또는 구역 (예: 11, E구역)' : m==='food' ? '식당 이름, 카테고리 (예: 한식, 오제제)' : '식당 이름, 카테고리, 회의실 번호...';
+  addWelcome(m);
+}
+
+function searchFood(q) {
+  const kw = q.toLowerCase();
+  return FOOD.filter(d =>
+    d.n.toLowerCase().includes(kw) ||
+    d.cat.toLowerCase().includes(kw) ||
+    d.loc.toLowerCase().includes(kw) ||
+    d.menu.toLowerCase().includes(kw)
+  );
+}
+
+function searchRoom(q) {
+  const kw = q.toLowerCase().replace(/\s/g,'').replace(/회의실/g,'').replace(/호/g,'');
+  return ROOMS.filter(r =>
+    r.num.includes(kw) ||
+    String(parseInt(r.num)).includes(kw) ||
+    r.zone.toLowerCase().replace(/\s/g,'').includes(kw.replace(/구역/g,'')) ||
+    r.loc.toLowerCase().includes(kw)
+  );
+}
+
+function foodCard(d) {
+  return `<div class="result-card">
+    <div class="rest-name">${d.n}</div>
+    <span class="price-badge">식권 ${d.price.toLocaleString()}원</span><span class="cat-badge">${d.cat}</span>
+    ${d.menu!=='-'?`<div class="menu-info">🍽 ${d.menu}</div>`:''}
+    <div class="addr">📍 ${d.loc} · ${d.addr}</div>
+  </div>`;
+}
+
+function roomCard(r) {
+  return `<div class="room-card">
+    <div class="room-num">${parseInt(r.num)}</div>
+    <div>
+      <div class="room-zone">🏢 회의실 ${parseInt(r.num)}호</div>
+      <div class="room-zone" style="color:#1D9E75;font-size:12px;margin-top:2px;">${r.zone}</div>
+      <div class="room-loc">📍 ${r.loc}</div>
+    </div>
+  </div>`;
+}
+
+function addMsg(html, who) {
+  const msgs = document.getElementById('msgs');
+  const div = document.createElement('div');
+  div.className = `msg ${who}`;
+  div.innerHTML = `<div class="bubble">${html}</div>`;
+  msgs.appendChild(div);
+  msgs.scrollTop = msgs.scrollHeight;
+  return div;
+}
+
+function respond(q) {
+  const isRoomQuery = /회의실|meeting|room|\d{1,2}호|[enwENW]구역/i.test(q) || mode==='room';
+  const isFoodQuery = mode==='food' || (!isRoomQuery);
+
+  let foodResults = [], roomResults = [];
+
+  if (mode==='all' || mode==='food') foodResults = searchFood(q);
+  if (mode==='all' || mode==='room') roomResults = searchRoom(q);
+
+  if (!foodResults.length && !roomResults.length) {
+    addMsg(`"<b>${q}</b>" 에 해당하는 결과를 찾지 못했어요.<br><span style="font-size:12px;color:#aaa">식당 이름·카테고리 또는 회의실 번호·구역으로 검색해보세요.</span>`, 'bot');
+    return;
+  }
+
+  let html = '';
+
+  if (roomResults.length) {
+    html += `<div style="font-size:12px;color:#888;margin-bottom:6px;">🏢 회의실 ${roomResults.length}개</div>`;
+    html += `<div class="multi-result">${roomResults.map(roomCard).join('')}</div>`;
+  }
+
+  if (foodResults.length) {
+    if (roomResults.length) html += `<div style="margin-top:12px;border-top:1px solid #eee;padding-top:10px;"></div>`;
+    const shown = foodResults.slice(0,6);
+    html += `<div style="font-size:12px;color:#888;margin-bottom:6px;">🍱 식권 식당 ${foodResults.length}개</div>`;
+    html += `<div class="multi-result">${shown.map(foodCard).join('')}</div>`;
+    if (foodResults.length>6) html += `<div class="more-info">외 ${foodResults.length-6}개 · 더 구체적으로 검색해보세요</div>`;
+  }
+
+  addMsg(html, 'bot');
+}
+
+function addWelcome(m) {
+  const msgs = document.getElementById('msgs');
+  msgs.innerHTML = '';
+  let chips = '';
+  if (m==='food' || m==='all') {
+    chips += FOOD_CATS.map(c=>`<span class="chip" onclick="quickSearch('${c}')">${c}</span>`).join('');
+  }
+  if (m==='room' || m==='all') {
+    chips += ROOM_ZONES.map(z=>`<span class="chip room-chip" onclick="quickSearch('${z}')">${z}</span>`).join('');
+    chips += [1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19].map(n=>`<span class="chip room-chip" onclick="quickSearch('${n}')">회의실 ${n}</span>`).join('');
+  }
+
+  const greeting = m==='food' ? '🍱 식권 식당을 검색해드려요.' : m==='room' ? '🏢 8층 회의실 위치를 안내해드려요.' : '🏢 8층 식권 식당 및 회의실을 검색해드려요.';
+  const sub = m==='food' ? '107개 식당 · 식권 4,500~8,000원' : m==='room' ? '회의실 01~19호' : '식당 107개 · 회의실 19개';
+
+  const div = document.createElement('div');
+  div.className = 'msg bot';
+  div.innerHTML = `<div class="bubble">${greeting}<br><span style="font-size:12px;color:#aaa;">${sub}</span><div class="chips">${chips}</div></div>`;
+  msgs.appendChild(div);
+  div.querySelectorAll('.chip').forEach(chip=>{
+    chip.addEventListener('click', ()=>{ quickSearch(chip.dataset.v || chip.textContent.replace('회의실 ','')); });
+  });
+}
+
+function quickSearch(v) {
+  addMsg(v, 'user');
+  setTimeout(()=>respond(v), 200);
+}
+
+const inp = document.getElementById('inp');
+document.getElementById('sendbtn').addEventListener('click', ()=>{
+  const v = inp.value.trim();
+  if (!v) return;
+  addMsg(v, 'user');
+  inp.value = '';
+  setTimeout(()=>respond(v), 200);
+});
+inp.addEventListener('keydown', e=>{ if(e.key==='Enter') document.getElementById('sendbtn').click(); });
+
+addWelcome('all');
+</script>
+</body>
+</html>
