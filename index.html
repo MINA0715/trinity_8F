@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>8F 안내</title>
+<title>트리니티 식권 리스트</title>
 <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;600&display=swap" rel="stylesheet">
 <style>
 *{box-sizing:border-box;margin:0;padding:0;}
@@ -66,7 +66,7 @@ body{font-family:'Noto Sans KR',sans-serif;background:#f0f0ec;min-height:100vh;}
 </head>
 <body>
 <div class="container">
-  <div class="main-tabs">
+  <div class="main-tabs" style="display:none">
     <button class="main-tab food active" onclick="showSection('food')">🍱 식권 식당</button>
     <button class="main-tab floor" onclick="showSection('floor')">🏢 8층 배치도</button>
   </div>
@@ -192,7 +192,7 @@ const FOOD = [
   {n:"밥플러스",cat:"한식",loc:"마곡동",price:8000,menu:"9,000",addr:"서울특별시 강서구 마곡중앙로 105-7 B동 지하2층"},
   {n:"버거리",cat:"햄버거",loc:"마곡나루역",price:8000,menu:"트리플치즈버거 6,600 / SET 10,300",addr:"서울특별시 강서구 마곡서로152 A동 114호"},
   {n:"청가",cat:"중식",loc:"마곡동",price:8000,menu:"해물자장면 7,000 / 삼선짬뽕 9,000",addr:"서울특별시 강서구 마곡서로 152 두산더랜드타워 B동 2층 203호"},
-  {n:"셀러디",cat:"샐러드/포케",loc:"마곡나루역",price:8000,menu:"클래식 치킨 샌드위치 세트 8,400",addr:"서울 강서구 마곡중앙5로 6 1층"},
+  {n:"샐러디",cat:"샐러드/포케",loc:"마곡나루역",price:8000,menu:"클래식 치킨 샌드위치 세트 8,400",addr:"서울 강서구 마곡중앙5로 6 1층"},
   {n:"KFC",cat:"햄버거",loc:"마곡나루역",price:8000,menu:"-",addr:"서울특별시 강서구 마곡중앙5로 6 1층"},
   {n:"전주옥가마솥곰탕",cat:"한식",loc:"마곡동",price:8000,menu:"한우전주곰탕 12,000",addr:"서울특별시 강서구 마곡중앙5로 6 서관 B123호"},
   {n:"달인 대보손칼국수",cat:"한식",loc:"마곡동",price:8000,menu:"원조칼국수 8,000 / 한우육회비빔밥 10,000",addr:"서울특별시 강서구 마곡중앙5로 6 2층 211호"},
