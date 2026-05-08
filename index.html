@@ -50,6 +50,11 @@ body{font-family:'Noto Sans KR',sans-serif;background:#f0f0ec;height:100vh;heigh
 .zoom-hint{font-size:11px;color:#6b6158;}
 .img-wrap{border-radius:8px;border:1px solid #eee;overflow:hidden;}
 .img-wrap img{width:100%;display:block;cursor:zoom-in;}
+.pager{display:flex;align-items:center;justify-content:space-between;margin-top:10px;gap:6px;}
+.pager-btn{flex-shrink:0;width:36px;height:36px;background:#fff;border:1px solid #e0e0da;border-radius:10px;font-size:16px;cursor:pointer;color:#555;}
+.pager-btn:disabled{opacity:0.3;cursor:default;}
+.pager-btn:not(:disabled):active{background:#6b6158;color:#fff;border-color:#6b6158;}
+.pager-info{font-size:12px;color:#888;text-align:center;flex:1;}
 /* 라이트박스 */
 .lb{display:none;position:fixed;inset:0;background:rgba(0,0,0,0.93);z-index:9999;flex-direction:column;}
 .lb.open{display:flex;}
@@ -316,14 +321,58 @@ function addMsg(html,who) {
   d.innerHTML='<div class="bubble">'+html+'</div>';
   m.appendChild(d); m.scrollTop=m.scrollHeight;
 }
+const PAGE_SIZE = 5;
+let curResults = [], curPage = 0;
+
 function respond(q) {
-  const r=searchFood(q);
-  if(!r.length){ addMsg('"<b>'+q+'</b>" 결과가 없어요.<br><span style="font-size:11px;color:#aaa">식당명·카테고리·메뉴로 검색해보세요.</span>','bot'); showBackBtn(); return; }
-  let h='';
-  if(r.length>1) h+=`<div style="font-size:11px;color:#aaa;margin-bottom:5px;">${r.length}개 · 카드 클릭 시 네이버 지도</div>`;
-  h+='<div class="multi-result">'+r.map(foodCard).join('')+'</div>';
-  addMsg(h,'bot');
+  const r = searchFood(q);
+  if(!r.length){
+    addMsg('"<b>'+q+'</b>" 결과가 없어요.<br><span style="font-size:11px;color:#aaa">식당명·카테고리·메뉴로 검색해보세요.</span>','bot');
+    showBackBtn(); return;
+  }
+  curResults = r.slice().sort((a,b) => a.n.localeCompare(b.n,'ko'));
+  curPage = 0;
+  // 새 검색 시 기존 result-bubble id 제거해서 항상 새 말풍선 생성
+  const old = document.getElementById('result-bubble');
+  if(old) old.removeAttribute('id');
+  renderPage(true);
   showBackBtn();
+}
+
+function renderPage(isNew=false) {
+  const total = curResults.length;
+  const totalPages = Math.ceil(total / PAGE_SIZE);
+  const start = curPage * PAGE_SIZE;
+  const items = curResults.slice(start, start + PAGE_SIZE);
+  const cards = items.map(foodCard).join('');
+  const pager = total > PAGE_SIZE
+    ? `<div class="pager">
+        <button class="pager-btn" onclick="changePage(-1)" ${curPage===0?'disabled':''}>◀</button>
+        <span class="pager-info">${start+1}–${Math.min(start+PAGE_SIZE,total)} / 총 ${total}개</span>
+        <button class="pager-btn" onclick="changePage(1)" ${curPage>=totalPages-1?'disabled':''}>▶</button>
+       </div>`
+    : `<div style="font-size:11px;color:#aaa;margin-top:6px;margin-bottom:2px;">총 ${total}개 · 카드 클릭 시 네이버 지도</div>`;
+
+  const m = document.getElementById('msgs');
+  const existing = document.getElementById('result-bubble');
+  if(!isNew && existing) {
+    // 화살표 클릭 시 기존 말풍선 내용만 교체
+    existing.querySelector('.bubble').innerHTML = cards + pager;
+    m.scrollTop = existing.offsetTop;
+  } else {
+    // 새 검색 시 새 말풍선 추가
+    const d = document.createElement('div');
+    d.className = 'msg bot'; d.id = 'result-bubble';
+    d.innerHTML = '<div class="bubble">' + cards + pager + '</div>';
+    m.appendChild(d);
+    m.scrollTop = m.scrollHeight;
+  }
+}
+
+function changePage(dir) {
+  const totalPages = Math.ceil(curResults.length / PAGE_SIZE);
+  curPage = Math.max(0, Math.min(totalPages-1, curPage+dir));
+  renderPage(false);
 }
 const PRICE_CATS = ['4,500원','5,000원','8,000원'];
 
@@ -336,7 +385,7 @@ function showWelcome(){
   d.innerHTML='<div class="bubble">안녕하세요!<br>마곡 소노트리니티항공 식권 리스트입니다!🍱<br><span style="font-size:11px;color:#aaa;">107개 · 식권 4,500~8,000원<br>· 카드 클릭 시 네이버 지도</span>'+catHtml+priceHtml+'</div>';
   m.appendChild(d);
   m.scrollTop=m.scrollHeight;
-  d.querySelectorAll('.chip').forEach(chip=>chip.addEventListener('click',()=>{addMsg(chip.textContent,'user');setTimeout(()=>respond(chip.textContent),150);}));
+  d.querySelectorAll('.chip, .price-chip').forEach(chip=>chip.addEventListener('click',()=>{addMsg(chip.textContent,'user');setTimeout(()=>respond(chip.textContent),150);}));
 }
 
 function showBackBtn(){
@@ -350,6 +399,7 @@ function showBackBtn(){
 
 function goHome(){
   document.getElementById('msgs').innerHTML='';
+  curResults=[]; curPage=0;
   showWelcome();
 }
 
